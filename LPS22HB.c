@@ -106,6 +106,7 @@ LPS22HB_BIT_t LPS22HBSetLPFP(LPS22HB_LPFP_CFG_t lpfp_cfg);
 
 LPS22HB_DATA_CONTEINER_t LPS22HBUpdateData(){
     uint8_t cmd[5];
+    
     LPS22HB_DATA_CONTEINER_t lps22hb_data;
     
     SpiReadWrite(LPS22HB_PRESS_OUT_XL,cmd,3,READ);
@@ -113,8 +114,11 @@ LPS22HB_DATA_CONTEINER_t LPS22HBUpdateData(){
     lps22hb_data.press_row.press_out_XL = cmd[0];
     lps22hb_data.press_row.press_out_L = cmd[1];
     lps22hb_data.press_row.press_out_H = cmd[2];
-    lps22hb_data.temp_row.temp_out_L = cmd[3];
-    lps22hb_data.temp_row.temp_out_H = cmd[4];
+    
+    SpiReadWrite(LPS22HB_TEMP_OUT_L,cmd,2,READ);
+    lps22hb_data.temp_row.temp_out_L = cmd[0];
+    lps22hb_data.temp_row.temp_out_H = cmd[1];
+    
     
     return lps22hb_data;
 }
@@ -134,7 +138,7 @@ float LPS22HBGetTemp(LPS22HB_DATA_CONTEINER_t lps22hb_data){
 
 static void SpiReadWrite(const uint8_t reg, uint8_t *data, const uint8_t size, const SPI_DIRECTION direction){
     uint8_t address;
-    
+    volatile uint8_t temp;
     address = SpiMask(reg,direction);
     SPIM_LPS_ClearFIFO();
     
@@ -142,10 +146,12 @@ static void SpiReadWrite(const uint8_t reg, uint8_t *data, const uint8_t size, c
     SPIM_LPS_PutArray(data,size);
     
     while(!(SPIM_LPS_ReadTxStatus() & SPIM_LPS_STS_SPI_DONE));
-    
+    temp = SPIM_LPS_GetRxBufferSize();
     SPIM_LPS_ReadRxData();
+    temp = SPIM_LPS_GetRxBufferSize();
     for(uint8_t i = 0;i < size; i++){
         data[i] = SPIM_LPS_ReadRxData();
+        temp = SPIM_LPS_GetRxBufferSize();
     }
 }
 
