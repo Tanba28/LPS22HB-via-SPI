@@ -34,7 +34,7 @@
 #define LPS22HB_CONFIG_I2CDIS      0 /* default:0 I2Cの有効化に関する設定。1にした場合I2Cが無効になる */
 #define LPS22HB_CONFIG_IF_ADC_INC  1 /* default:1 連続でレジスタを読んだときにアドレスのインクリメントを有効にするかどうか。0の場合インクリメントが無効になる */
 #define LPS22HB_CONFIG_STOP_ON_FTH 0 /* default:0 FIFOのウォーターマークを有効にするかどうか */
-#define LPS22HB_CONFIG_FIFO_EN     0 /* default:0 FIFOを有効にするかどうか */
+#define LPS22HB_CONFIG_FIFO_EN     1 /* default:0 FIFOを有効にするかどうか */
 #define LPS22HB_CONFIG_BOOT        0 /* default:0 1にした場合、内部メモリをリブートする */
 
 /* CTRL REG3 Config */
@@ -42,13 +42,13 @@
 #define LPS22HB_CONFIG_DRDY        0 /* default:0 データレディ割り込みを有効にするかどうか */
 #define LPS22HB_CONFIG_D_OVR       0 /* default:0 FIFOがオーバーランしたときに割り込みを発生させるかどうか */
 #define LPS22HB_CONFIG_F_FTH       0 /* default:0 FIFOがウォーターマークに達したときに割り込みを発生させるかどうか */
-#define LPS22HB_CONFIG_F_FSS5      0 /* default:0 FIFOがFULLになったときに割り込みを発生させるかどうか */
+#define LPS22HB_CONFIG_F_FSS5      1 /* default:0 FIFOがFULLになったときに割り込みを発生させるかどうか */
 #define LPS22HB_CONFIG_PP_OD       0 /* default:0 割り込みピンの動作設定。0のときプッシュプル。1のときオープンドレイン */
 #define LPS22HB_CONFIG_INT_H_L     0 /* default:0 割り込みのアクティブハイ/アクティブロー設定。0のときアクティブハイ。1のときアクティブロー */
 
 /* FIFO CTRL Config */
 #define LPS22HB_CONFIG_WTM         0 /*default:0x00 ウォーターマークの閾値 */
-#define LPS22HB_CONFIG_FIFO_MODE   LPS22HB_FIFOMODE_BYPASS /*default:0x00 FIFOに関する設定。列挙型参照 */
+#define LPS22HB_CONFIG_FIFO_MODE   LPS22HB_FIFOMODE_FIFO /*default:0x00 FIFOに関する設定。列挙型参照 */
 
 /* LPS22HB Register Mapping */
 #define LPS22HB_INTERRUPT_CFG   0x0B /* R/W Interrupt Register */
@@ -184,7 +184,7 @@ typedef union {
         LPS22HB_DATA_t press_out_L;
         LPS22HB_DATA_t press_out_H;
     };
-    uint32_t press_row : 24;
+    uint32_t press : 24;
 } LPS22HB_PRESS_ROW_t;
 
 typedef union {
@@ -192,7 +192,7 @@ typedef union {
         LPS22HB_DATA_t temp_out_L;
         LPS22HB_DATA_t temp_out_H;
     };
-    uint16_t temp_row;
+    uint16_t temp;
 } LPS22HB_TEMP_ROW_t;
 
 typedef struct {
@@ -200,16 +200,26 @@ typedef struct {
     LPS22HB_TEMP_ROW_t temp_row;
 } LPS22HB_DATA_CONTEINER_t;
 
+typedef struct {
+    LPS22HB_INTERRUPT_CFG_BYTE_t interrupt_cfg;
+    LPS22HB_CTRL_REG1_BYTE_t ctrl_reg1;
+    LPS22HB_CTRL_REG2_BYTE_t ctrl_reg2;
+    LPS22HB_CTRL_REG3_BYTE_t ctrl_reg3;
+    LPS22HB_FIFO_CTRL_BYTE_t fifo_ctrl;
+} LPS22HB_CONFIG_t;
+
 typedef enum {
     READ = 0,
     WRITE = 1
 } SPI_DIRECTION;
 
 void LPS22HBStart();
+LPS22HB_CONFIG_t LPS22HBInitializeConfig();
 LPS22HB_BIT_t LPS22HBWhoAmI();
-LPS22HB_BIT_t LPS22HBSetODR(LPS22HB_ODR_t odr);
-LPS22HB_BIT_t LPS22HBSetDRDY(LPS22HB_BIT_t drdy);
-LPS22HB_BIT_t LPS22HBSetLPFP(LPS22HB_LPFP_CFG_t lpfp_cfg);
+LPS22HB_BIT_t LPS22HBSoftwareReset();
+LPS22HB_BIT_t LPS22HBSetODR(LPS22HB_ODR_t odr,LPS22HB_CONFIG_t *config);
+LPS22HB_BIT_t LPS22HBSetDRDY(LPS22HB_BIT_t drdy,LPS22HB_CONFIG_t *config);
+LPS22HB_BIT_t LPS22HBSetLPFP(LPS22HB_LPFP_CFG_t lpfp_cfg,LPS22HB_CONFIG_t *config);
 LPS22HB_DATA_CONTEINER_t LPS22HBUpdateData();
 uint32_t LPS22HBGetPressRow(LPS22HB_DATA_CONTEINER_t lps22hb_data);
 uint16_t LPS22HBGetTempRow(LPS22HB_DATA_CONTEINER_t lps22hb_data);
